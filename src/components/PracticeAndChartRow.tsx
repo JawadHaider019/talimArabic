@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Layers, Play, TrendingUp, ChevronDown } from 'lucide-react';
+import { Layers, Play, TrendingUp, ChevronDown, Volume2, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
-import { CurriculumUnit, SpeakingSessionPoint } from '../data/curriculum';
+import { CurriculumUnit, SpeakingSessionPoint, SAMPLE_SCORE_HISTORY } from '../data/curriculum';
 
 interface PracticeAndChartRowProps {
   isMobileView: boolean;
@@ -25,8 +25,29 @@ export function PracticeAndChartRow({
   onStartSpeakingFromEmpty,
 }: PracticeAndChartRowProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [chartMode, setChartMode] = useState<'current' | 'projected'>('current');
   const selectedUnit =
     units.find((u) => u.id === selectedQuizUnitId) ?? units[2];
+
+  const speakWord = (word: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'ar-SA';
+      u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    } catch {}
+  };
+
+  const activeHistory =
+    chartMode === 'projected'
+      ? SAMPLE_SCORE_HISTORY
+      : !showEmptyChart && scoreHistory.length > 0
+      ? scoreHistory
+      : [];
+
+  const isEmpty = activeHistory.length === 0;
 
   // SVG Chart Geometry
   const chartW = 520;
@@ -38,11 +59,11 @@ export function PracticeAndChartRow({
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
-  const points = scoreHistory.map((item, idx) => {
+  const points = activeHistory.map((item, idx) => {
     const x =
-      scoreHistory.length <= 1
+      activeHistory.length <= 1
         ? padL + plotW / 2
-        : padL + (idx / (scoreHistory.length - 1)) * plotW;
+        : padL + (idx / (activeHistory.length - 1)) * plotW;
     const y = padT + (1 - item.score / 100) * plotH;
     return { ...item, x, y };
   });
@@ -137,6 +158,27 @@ export function PracticeAndChartRow({
               </select>
               <ChevronDown className="pointer-events-none w-4 h-4 text-[#64748B] absolute right-3.5 top-1/2 -translate-y-1/2" />
             </div>
+
+            {/* Quick Word Preview with Pronunciation */}
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E8ECF2] text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-arabic text-base font-bold text-[#A07020]">
+                  {selectedUnit.arabicTitle}
+                </span>
+                <span className="text-[#64748B] font-medium text-[11px]">
+                  ({selectedUnit.title})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => speakWord(selectedUnit.arabicTitle)}
+                title="Pronounce Arabic title"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-[#FDF8EC] text-[#A07020] border border-[#DFB76C]/40 text-[11px] font-semibold transition-all cursor-pointer shadow-2xs active:scale-95"
+              >
+                <Volume2 className="w-3 h-3 text-[#DFB76C]" />
+                <span>Hear</span>
+              </button>
+            </div>
           </div>
 
           <motion.button
@@ -158,7 +200,7 @@ export function PracticeAndChartRow({
           isMobileView ? '' : 'col-span-7'
         }`}
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
             <span className="w-9 h-9 rounded-xl bg-[#FDF8EC] text-[#C8922B] flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4" />
@@ -168,21 +210,49 @@ export function PracticeAndChartRow({
                 Speaking Score Progress
               </h3>
               <p className="text-xs text-[#64748B]">
-                {showEmptyChart
+                {isEmpty
                   ? 'Fluency & pronunciation over time'
                   : 'Recent speaking evaluations'}
               </p>
             </div>
           </div>
 
-          {!showEmptyChart && scoreHistory.length > 0 && (
-            <span className="text-xs font-semibold text-[#059669] tabular-nums">
-              Peak {Math.max(...scoreHistory.map((s) => s.score))}%
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Segmented Curve Switcher */}
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-[#F1F4F8] border border-[#E2E8F0] text-[11px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setChartMode('current')}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  chartMode === 'current'
+                    ? 'bg-white shadow-xs text-[#07111E] font-bold'
+                    : 'text-[#64748B] hover:text-[#07111E]'
+                }`}
+              >
+                Current State
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMode('projected')}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  chartMode === 'projected'
+                    ? 'bg-gradient-to-r from-[#DFB76C] to-[#C59B4B] text-[#07111E] font-extrabold shadow-xs'
+                    : 'text-[#64748B] hover:text-[#07111E]'
+                }`}
+              >
+                Projected Curve ↗
+              </button>
+            </div>
+
+            {!isEmpty && (
+              <span className="text-xs font-semibold text-[#059669] tabular-nums hidden sm:inline">
+                Peak {Math.max(...activeHistory.map((s) => s.score))}%
+              </span>
+            )}
+          </div>
         </div>
 
-        {showEmptyChart || scoreHistory.length === 0 ? (
+        {isEmpty ? (
           /* Friendly Empty State with subtle animated curve */
           <div className="mt-4 flex-1 min-h-[168px] rounded-xl bg-[#F8FAFC] border border-dashed border-[#DCE3EC] p-5 flex flex-col items-center justify-center text-center">
             <svg

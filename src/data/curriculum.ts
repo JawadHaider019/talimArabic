@@ -902,3 +902,162 @@ export const REAL_BUBBLE_UNITS: CurriculumUnit[] = INITIAL_UNITS.map((u) => {
   }
   return { ...u, status: 'not_started', speakingScore: null, vocabCorrect: 0 };
 });
+
+export interface PhonemeMastery {
+  letter: string;
+  name: string;
+  transliteration: string;
+  accuracy: number;
+  status: 'mastered' | 'improving' | 'needs_work';
+  sampleWord: string;
+  sampleWordEnglish: string;
+}
+
+export const ARABIC_PHONEMES: PhonemeMastery[] = [
+  { letter: 'ع', name: 'Ayn', transliteration: "'Ayn", accuracy: 94, status: 'mastered', sampleWord: 'عَرَبِيّ', sampleWordEnglish: 'Arabic' },
+  { letter: 'ح', name: 'Haa', transliteration: 'Ḥāʾ', accuracy: 89, status: 'mastered', sampleWord: 'حَدِيقَة', sampleWordEnglish: 'Garden' },
+  { letter: 'خ', name: 'Khaa', transliteration: 'Khāʾ', accuracy: 76, status: 'needs_work', sampleWord: 'خُبْز', sampleWordEnglish: 'Bread' },
+  { letter: 'ق', name: 'Qaaf', transliteration: 'Qāf', accuracy: 88, status: 'improving', sampleWord: 'قَلَم', sampleWordEnglish: 'Pen' },
+  { letter: 'ص', name: 'Saad', transliteration: 'Ṣād', accuracy: 92, status: 'mastered', sampleWord: 'صَبَاح', sampleWordEnglish: 'Morning' },
+  { letter: 'ض', name: 'Daad', transliteration: 'Ḍād', accuracy: 81, status: 'improving', sampleWord: 'ضَيْف', sampleWordEnglish: 'Guest' },
+  { letter: 'ط', name: 'Taa', transliteration: 'Ṭāʾ', accuracy: 95, status: 'mastered', sampleWord: 'طَبِيب', sampleWordEnglish: 'Doctor' },
+  { letter: 'غ', name: 'Ghayn', transliteration: 'Ghayn', accuracy: 86, status: 'improving', sampleWord: 'غُرْفَة', sampleWordEnglish: 'Room' },
+];
+
+export interface TutorPersona {
+  id: string;
+  name: string;
+  arabicName: string;
+  dialect: string;
+  speed: string;
+  specialty: string;
+  avatarUrl: string;
+  tagline: string;
+}
+
+export const TUTOR_PERSONAS: TutorPersona[] = [
+  {
+    id: 'aisha',
+    name: 'Aisha Al-Husseini',
+    arabicName: 'عَائِشَة الْحُسَيْنِي',
+    dialect: 'Modern Standard Arabic (فُصْحَى)',
+    speed: 'Natural (1.0x)',
+    specialty: 'Conversation & Grammar Focus',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+    tagline: 'Warm, patient tutor specialized in classical Arabic fluency and everyday dialogue.',
+  },
+  {
+    id: 'tariq',
+    name: 'Tariq Mansour',
+    arabicName: 'طَارِق مَنْصُور',
+    dialect: 'Levantine & Fusha Hybrid',
+    speed: 'Relaxed (0.85x)',
+    specialty: 'Phonetics & Pronunciation Drills',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
+    tagline: 'Focused on phoneme clarity, natural cadence, and confident speaking.',
+  },
+];
+
+export interface SpokenSessionSnippet {
+  id: string;
+  date: string;
+  unitTitle: string;
+  studentSpoken: string;
+  tutorFeedback: string;
+  accuracyScore: number;
+  grammarNote: string;
+}
+
+export const RECENT_FEEDBACK_SNIPPETS: SpokenSessionSnippet[] = [
+  {
+    id: 'f1',
+    date: '18 Nov, 14:20',
+    unitTitle: 'Book 1, Unit 3: The Home',
+    studentSpoken: 'أَسْكُنُ فِي شَقَّةٍ جَمِيلَةٍ قَرِيبَةٍ مِنَ المَسْجِد',
+    tutorFeedback: 'Excellent adjective agreement (شَقَّةٍ جَمِيلَةٍ). Very natural fluency!',
+    accuracyScore: 92,
+    grammarNote: 'Female singular adjective matches feminine noun perfectly.',
+  },
+  {
+    id: 'f2',
+    date: '16 Nov, 11:05',
+    unitTitle: 'Book 1, Unit 2: The Family',
+    studentSpoken: 'هَذَا وَالِدِي وَهُوَ يَعْمَلُ طَبِيبًا فِي المُسْتَشْفَى',
+    tutorFeedback: 'Correct accusative case (طَبِيبًا). Smooth pacing and clear articulation of Ha and Ayn.',
+    accuracyScore: 88,
+    grammarNote: 'Predicate accusative with verb ya’malu.',
+  },
+  {
+    id: 'f3',
+    date: '12 Nov, 19:40',
+    unitTitle: 'Book 1, Unit 1: Introductions',
+    studentSpoken: 'أَنَا طَالِبٌ فِي جَامِعَةِ أُمِّ القُرَى بِمَكَّةَ',
+    tutorFeedback: 'Clear pronunciation of Qaf (ق). Noticeable confidence boost!',
+    accuracyScore: 95,
+    grammarNote: 'Proper Idafa structure.',
+  },
+];
+
+export interface FlashcardWord {
+  id: string;
+  arabic: string;
+  transliteration: string;
+  english: string;
+  partOfSpeech: string;
+  plural?: string;
+  exampleArabic: string;
+  exampleEnglish: string;
+  masteryPercent: number;
+  unit: string;
+}
+
+export const FLASHCARD_DRILLS: FlashcardWord[] = [
+  {
+    id: 'w1',
+    arabic: 'بَيْتٌ',
+    transliteration: 'Bayt',
+    english: 'Home / House',
+    partOfSpeech: 'Noun (اسم)',
+    plural: 'بُيُوت (Buyūt)',
+    exampleArabic: 'بَيْتِي كَبِيرٌ وَمُرِيحٌ',
+    exampleEnglish: 'My house is spacious and comfortable.',
+    masteryPercent: 90,
+    unit: 'Book 1, Unit 3',
+  },
+  {
+    id: 'w2',
+    arabic: 'غُرْفَةُ الجُلُوسِ',
+    transliteration: 'Ghurfat al-Juloos',
+    english: 'Living Room',
+    partOfSpeech: 'Compound Noun (مُرَكَّب)',
+    plural: 'غُرَفُ الجُلُوس',
+    exampleArabic: 'تَجْلِسُ العَائِلَةُ فِي غُرْفَةِ الجُلُوسِ',
+    exampleEnglish: 'The family sits in the living room.',
+    masteryPercent: 75,
+    unit: 'Book 1, Unit 3',
+  },
+  {
+    id: 'w3',
+    arabic: 'مَطْبَخٌ',
+    transliteration: 'Matbakh',
+    english: 'Kitchen',
+    partOfSpeech: 'Noun of Place (اسم مكان)',
+    plural: 'مَطَابِخ (Maṭābikh)',
+    exampleArabic: 'أُمِّي تُعِدُّ الطَّعَامَ فِي المَطْبَخِ',
+    exampleEnglish: 'My mother prepares food in the kitchen.',
+    masteryPercent: 65,
+    unit: 'Book 1, Unit 3',
+  },
+  {
+    id: 'w4',
+    arabic: 'أَرِيكَةٌ',
+    transliteration: 'Areeka',
+    english: 'Sofa / Couch',
+    partOfSpeech: 'Noun (اسم)',
+    plural: 'أَرَائِك (Arā’ik)',
+    exampleArabic: 'الأَرِيكَةُ فِي الصَّالَةِ مَرِيحَةٌ جِدًّا',
+    exampleEnglish: 'The couch in the parlor is very comfortable.',
+    masteryPercent: 82,
+    unit: 'Book 1, Unit 3',
+  },
+];

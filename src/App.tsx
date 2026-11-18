@@ -21,6 +21,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { TrustProofStrip } from './components/TrustProofStrip';
 import { UpgradeModal } from './components/UpgradeModal';
 import { PlacementBookingModal } from './components/PlacementBookingModal';
+import { PronunciationRadar } from './components/PronunciationRadar';
+import { RecentDialogueFeed } from './components/RecentDialogueFeed';
+import { InteractiveFlashcardWidget } from './components/InteractiveFlashcardWidget';
+import { PitchContourVisualizer } from './components/PitchContourVisualizer';
+import { SessionReportModal } from './components/SessionReportModal';
+import { Volume2, Award } from 'lucide-react';
 
 const STORAGE_KEY = 'talimarabic_app_v3';
 
@@ -123,6 +129,38 @@ export default function App() {
   const [placementModalOpen, setPlacementModalOpen] = useState<boolean>(false);
   const [isEnrolledInFull, setIsEnrolledInFull] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentDemoMode, setCurrentDemoMode] = useState<'bubble' | 'advanced'>('bubble');
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [lastCompletedScore, setLastCompletedScore] = useState<number>(88);
+
+  const handleToggleDemoMode = (targetMode: 'bubble' | 'advanced') => {
+    setCurrentDemoMode(targetMode);
+    if (targetMode === 'bubble') {
+      setUnits(REAL_BUBBLE_UNITS);
+      setActiveUnitId('b1-u3');
+      setActiveBook(1);
+      setQuizUnitId('b1-u3');
+      setLatestUnitId('b1-u3');
+      setWeeklyCompleted(REAL_BUBBLE_PROFILE.weeklyGoalCompleted);
+      setConsecutiveWeeksStreak(REAL_BUBBLE_PROFILE.weeklyStreakCount);
+      setTimeStudiedMinutes(REAL_BUBBLE_PROFILE.timeStudiedMinutes);
+      setRemainingSeconds(REAL_BUBBLE_PROFILE.sessionRemainingSeconds);
+      setScoreHistory([]);
+      showToast("Loaded Client’s Bubble live app state (Unit 3, 15%, 10 min)");
+    } else {
+      setUnits(INITIAL_UNITS);
+      setActiveUnitId('b1-u4');
+      setActiveBook(1);
+      setQuizUnitId('b1-u4');
+      setLatestUnitId('b1-u4');
+      setWeeklyCompleted(STUDENT_PROFILE.weeklyGoalCompleted);
+      setConsecutiveWeeksStreak(STUDENT_PROFILE.weeklyStreakCount);
+      setTimeStudiedMinutes(STUDENT_PROFILE.timeStudiedMinutes);
+      setRemainingSeconds(STUDENT_PROFILE.sessionRemainingSeconds);
+      setScoreHistory(SAMPLE_SCORE_HISTORY);
+      showToast("Loaded Active Learner advanced state (6 units passed, 92%)");
+    }
+  };
 
   const [windowWidth, setWindowWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1440
@@ -210,12 +248,12 @@ export default function App() {
       prev.map((u) =>
         u.id === activeUnit.id
           ? {
-              ...u,
-              status: passed ? 'passed' : 'needs_review',
-              speakingScore: calculatedScore,
-              vocabCorrect: Math.min(u.vocabTotal, u.vocabCorrect + Math.max(2, sessionTurnsCount * 2)),
-              lastPracticed: '18 Nov',
-            }
+            ...u,
+            status: passed ? 'passed' : 'needs_review',
+            speakingScore: calculatedScore,
+            vocabCorrect: Math.min(u.vocabTotal, u.vocabCorrect + Math.max(2, sessionTurnsCount * 2)),
+            lastPracticed: '18 Nov',
+          }
           : u
       )
     );
@@ -246,10 +284,11 @@ export default function App() {
     setSessionTurnsCount(0);
     setSessionElapsedSeconds(0);
     setHeroMode('default');
+    setLastCompletedScore(calculatedScore);
+    setReportModalOpen(true);
     showToast(
-      `Session scored ${calculatedScore}% — ${activeUnit.title} ${
-        passed ? 'marked Passed' : 'updated'
-      }.`
+      `Session scored ${calculatedScore}% — ${activeUnit.title} ${passed ? 'marked Passed' : 'updated'
+      }. Certificate generated!`
     );
   }, [
     activeUnit,
@@ -345,7 +384,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-[#F8F9FB] text-[#07111E] relative selection:bg-[#DFB76C]/30 selection:text-[#07111E]">
+      <div className="min-h-screen relative bg-[#F8F9FB] text-[#07111E] selection:bg-[#DFB76C]/30 selection:text-[#07111E]">
         {/* Subtle Luxury Ambient Background Glows */}
         <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden z-0">
           <div className="absolute -top-32 right-[15%] w-[580px] h-[580px] bg-gradient-to-b from-[#DFB76C]/10 via-[#DFB76C]/4 to-transparent rounded-full blur-3xl opacity-80" />
@@ -363,6 +402,8 @@ export default function App() {
           }}
           onOpenPlacement={() => setPlacementModalOpen(true)}
           onResetDemo={handleResetDemo}
+          currentDemoMode={currentDemoMode}
+          onToggleDemoMode={handleToggleDemoMode}
           onLogout={() => {
             setHeroMode('default');
             setIsLoggedIn(false);
@@ -371,9 +412,8 @@ export default function App() {
 
         {/* Main Content Container */}
         <main
-          className={`relative z-10 w-full ${
-            isMobileView ? 'px-4 py-5 space-y-6' : 'px-6 lg:px-8 py-8 space-y-8'
-          }`}
+          className={`relative z-10 w-full ${isMobileView ? 'px-4 py-5 space-y-6' : 'px-6 lg:px-8 py-8 space-y-8'
+            }`}
         >
           {/* 2. Greeting */}
           <motion.section
@@ -383,31 +423,68 @@ export default function App() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             <div
-              className={`flex ${
-                isMobileView
-                  ? 'flex-col gap-2'
-                  : 'items-end justify-between gap-4'
-              }`}
+              className={`flex ${isMobileView
+                ? 'flex-col gap-3'
+                : 'items-end justify-between gap-4'
+                }`}
             >
               <div>
-                <div className="inline-flex items-center gap-2 mb-1">
+                <div className="inline-flex items-center gap-2 mb-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#B38634]" />
                   <p className="font-arabic text-base font-semibold text-[#A07020] text-left">
                     السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ، يُوسُف
                   </p>
                 </div>
                 <h1
-                  className={`font-bold tracking-tight text-[#07111E] ${
-                    isMobileView ? 'text-2xl' : 'text-[32px]'
-                  }`}
+                  className={`font-bold tracking-tight text-[#07111E] ${isMobileView ? 'text-2xl' : 'text-[32px]'
+                    }`}
                 >
                   Assalamu Alaikum 👋, {STUDENT_PROFILE.firstName}
                 </h1>
+
+                {/* Daily Arabic Wisdom / Proverb Banner */}
+                <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#FDF8EC] to-[#FFFDF9] border border-[#DFB76C]/35 text-xs text-[#07111E] shadow-2xs flex-wrap">
+                  <span className="font-arabic font-bold text-[#A07020] text-sm">
+                    مَنْ جَدَّ وَجَدَ
+                  </span>
+                  <span className="text-[#A07020]/40">·</span>
+                  <span className="font-medium text-[#5A6B82] text-[11px]">
+                    Daily Arabic Wisdom: &ldquo;Whoever strives with diligence shall succeed&rdquo;
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        const u = new SpeechSynthesisUtterance("مَنْ جَدَّ وَجَدَ، وَمَنْ زَرَعَ حَصَدَ");
+                        u.lang = 'ar-SA';
+                        u.rate = 0.9;
+                        window.speechSynthesis.speak(u);
+                      }
+                    }}
+                    title="Listen to daily wisdom pronunciation"
+                    className="inline-flex items-center gap-1 p-1 rounded hover:bg-[#DFB76C]/25 text-[#A07020] transition-colors cursor-pointer active:scale-95"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-[#DFB76C]" />
+                    <span className="text-[10px] font-bold text-[#A07020]">Listen</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#E8ECF2] shadow-xs text-xs font-semibold text-[#5A6B82] tabular-nums self-start sm:self-auto">
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-                <span>Wednesday, 18 Nov 2026</span>
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#FDF8EC] to-white border border-[#DFB76C]/40 text-xs font-bold text-[#A07020] shadow-2xs hover:border-[#DFB76C] transition-all cursor-pointer active:scale-95"
+                >
+                  <Award className="w-3.5 h-3.5 text-[#DFB76C]" />
+                  <span>Session Certificate</span>
+                </button>
+
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#E8ECF2] shadow-xs text-xs font-semibold text-[#5A6B82] tabular-nums">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                  <span>Wednesday, 18 Nov 2026</span>
+                </div>
               </div>
             </div>
           </motion.section>
@@ -471,11 +548,49 @@ export default function App() {
             />
           </motion.div>
 
-          {/* 6 & 7. Practice (Vocabulary Quiz) + Speaking Score Chart */}
+          {/* 5.5 Arabic Phonetics & Harmonic Pitch Contour Visualizer */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.34, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className={`grid gap-4 ${isMobileView ? 'grid-cols-1' : 'grid-cols-12 items-stretch'}`}
+          >
+            <div className={isMobileView ? '' : 'col-span-7'}>
+              <PronunciationRadar
+                isMobileView={isMobileView}
+                onOpenPracticeLetter={(letter) => {
+                  showToast(`Practicing letter "${letter}" with native audio feedback.`);
+                }}
+              />
+            </div>
+            <div className={isMobileView ? '' : 'col-span-5'}>
+              <PitchContourVisualizer isMobileView={isMobileView} />
+            </div>
+          </motion.div>
+
+          {/* 6. Spoken Feed & Interactive Flashcard Bento Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.34, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+            className={`grid gap-4 ${isMobileView ? 'grid-cols-1' : 'grid-cols-12 items-stretch'}`}
+          >
+            <div className={isMobileView ? '' : 'col-span-5'}>
+              <InteractiveFlashcardWidget
+                isMobileView={isMobileView}
+                onOpenFullQuiz={() => setVocabQuizOpen(true)}
+              />
+            </div>
+            <div className={isMobileView ? '' : 'col-span-7'}>
+              <RecentDialogueFeed isMobileView={isMobileView} />
+            </div>
+          </motion.div>
+
+          {/* 7. Practice (Vocabulary Quiz) + Speaking Score Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.34, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
             <PracticeAndChartRow
               isMobileView={isMobileView}
@@ -581,12 +696,12 @@ export default function App() {
                 prev.map((u) =>
                   u.id === uId
                     ? {
-                        ...u,
-                        vocabCorrect: Math.min(
-                          u.vocabTotal,
-                          u.vocabCorrect + correctCount
-                        ),
-                      }
+                      ...u,
+                      vocabCorrect: Math.min(
+                        u.vocabTotal,
+                        u.vocabCorrect + correctCount
+                      ),
+                    }
                     : u
                 )
               );
@@ -594,6 +709,18 @@ export default function App() {
             showToast(`Vocabulary quiz saved (+${correctCount} words mastered).`);
           }}
           onClose={() => setVocabQuizOpen(false)}
+        />
+
+        {/* Post-Session Evaluation Certificate Modal */}
+        <SessionReportModal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          unitTitle={`Book ${activeUnit.book}, Unit ${activeUnit.unitNumber}: ${activeUnit.title}`}
+          arabicTitle={activeUnit.arabicTitle}
+          score={lastCompletedScore}
+          durationMinutes={10}
+          wordsAcquired={8}
+          isMobileView={isMobileView}
         />
 
         {/* Subtle Non-Intrusive Toast Feedback */}

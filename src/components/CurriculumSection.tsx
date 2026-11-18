@@ -1,7 +1,25 @@
-import React from 'react';
-import { CheckCircle2, AlertCircle, CircleDashed, ChevronRight, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  CheckCircle2,
+  AlertCircle,
+  CircleDashed,
+  ChevronRight,
+  Lock,
+  Volume2,
+  LayoutGrid,
+  Map,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CurriculumUnit } from '../data/curriculum';
+import { CurriculumRoadmap } from './CurriculumRoadmap';
+
+const EASTERN_ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+function toEasternArabic(num: number): string {
+  return String(num)
+    .split('')
+    .map((d) => EASTERN_ARABIC_DIGITS[parseInt(d, 10)] ?? d)
+    .join('');
+}
 
 interface CurriculumSectionProps {
   isMobileView: boolean;
@@ -24,9 +42,21 @@ export function CurriculumSection({
   onOpenUpgradeForUnit,
   isEnrolledInFull = false,
 }: CurriculumSectionProps) {
+  const [viewMode, setViewMode] = useState<'grid' | 'roadmap'>('grid');
   const bookUnits = units.filter((u) => u.book === activeBook);
   const book1Passed = units.filter((u) => u.book === 1 && u.status === 'passed').length;
   const book2Passed = units.filter((u) => u.book === 2 && u.status === 'passed').length;
+
+  const speakArabic = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ar-SA';
+      u.rate = 0.92;
+      window.speechSynthesis.speak(u);
+    } catch {}
+  };
 
   return (
     <section aria-label="Curriculum progress">
@@ -52,53 +82,92 @@ export function CurriculumSection({
           </p>
         </div>
 
-        {/* Book 1 / Book 2 Switcher with Sliding Pill */}
-        <div
-          role="tablist"
-          aria-label="Select curriculum book"
-          className={`inline-flex items-center p-1 rounded-xl bg-[#E8ECF2] border border-[#DCE3EC] shadow-inner ${
-            isMobileView ? 'w-full' : ''
-          }`}
-        >
-          {[
-            { book: 1 as const, passed: book1Passed },
-            { book: 2 as const, passed: book2Passed },
-          ].map(({ book, passed }) => {
-            const active = activeBook === book;
-            return (
-              <button
-                key={book}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => onChangeBook(book)}
-                className={`relative min-h-[38px] px-4 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  isMobileView ? 'flex-1' : ''
-                } ${
-                  active ? 'text-[#07111E]' : 'text-[#5A6B82] hover:text-[#07111E]'
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="curriculum-book-tab"
-                    transition={{ type: 'spring', stiffness: 440, damping: 34 }}
-                    className="absolute inset-0 bg-white rounded-lg shadow-sm"
-                  />
-                )}
-                <span className="relative z-10">
-                  Book {book}{' '}
-                  <span className="text-xs font-semibold opacity-75 ml-1 tabular-nums">
-                    ({passed}/16)
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* View Mode Switcher: Grid vs Learning Path */}
+          <div className="inline-flex items-center p-1 rounded-xl bg-[#E8ECF2] border border-[#DCE3EC] shadow-inner text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`min-h-[34px] px-3 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                viewMode === 'grid'
+                  ? 'bg-white text-[#07111E] shadow-sm'
+                  : 'text-[#5A6B82] hover:text-[#07111E]'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Grid View</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('roadmap')}
+              className={`min-h-[34px] px-3 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                viewMode === 'roadmap'
+                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#C59B4B] text-[#07111E] font-extrabold shadow-sm'
+                  : 'text-[#5A6B82] hover:text-[#07111E]'
+              }`}
+            >
+              <Map className="w-3.5 h-3.5" />
+              <span>Learning Path 🗺️</span>
+            </button>
+          </div>
+
+          {/* Book 1 / Book 2 Switcher with Sliding Pill */}
+          <div
+            role="tablist"
+            aria-label="Select curriculum book"
+            className={`inline-flex items-center p-1 rounded-xl bg-[#E8ECF2] border border-[#DCE3EC] shadow-inner ${
+              isMobileView ? 'w-full' : ''
+            }`}
+          >
+            {[
+              { book: 1 as const, passed: book1Passed },
+              { book: 2 as const, passed: book2Passed },
+            ].map(({ book, passed }) => {
+              const active = activeBook === book;
+              return (
+                <button
+                  key={book}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => onChangeBook(book)}
+                  className={`relative min-h-[38px] px-4 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    isMobileView ? 'flex-1' : ''
+                  } ${
+                    active ? 'text-[#07111E]' : 'text-[#5A6B82] hover:text-[#07111E]'
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="curriculum-book-tab"
+                      transition={{ type: 'spring', stiffness: 440, damping: 34 }}
+                      className="absolute inset-0 bg-white rounded-lg shadow-sm"
+                    />
+                  )}
+                  <span className="relative z-10">
+                    Book {book}{' '}
+                    <span className="text-xs font-semibold opacity-75 ml-1 tabular-nums">
+                      ({passed}/16)
+                    </span>
                   </span>
-                </span>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Unit Cards Grid: 4 cols on Desktop, clean single-column card list on 390px Mobile */}
-      <AnimatePresence mode="wait">
+      {viewMode === 'roadmap' ? (
+        <CurriculumRoadmap
+          units={units}
+          activeBook={activeBook}
+          activeUnitId={activeUnitId}
+          onSelectUnit={onSelectUnit}
+          onOpenUpgradeForUnit={onOpenUpgradeForUnit}
+          isEnrolledInFull={isEnrolledInFull}
+        />
+      ) : (
+        <AnimatePresence mode="wait">
         <motion.div
           key={`book-${activeBook}`}
           initial={{ opacity: 0, y: 8 }}
@@ -173,6 +242,9 @@ export function CurriculumSection({
                 {/* Top Row: Unit # + Status Chip */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-[#0B192C]/[0.04] text-[#A07020] font-arabic font-bold text-xs flex items-center justify-center shrink-0">
+                      {toEasternArabic(unit.unitNumber)}
+                    </span>
                     <span className="text-xs font-semibold text-[#64748B] tabular-nums">
                       Unit {unit.unitNumber}
                     </span>
@@ -198,14 +270,27 @@ export function CurriculumSection({
                   )}
                 </div>
 
-                {/* Unit Title (English + Arabic) */}
+                {/* Unit Title (English + Arabic with Pronounce Button) */}
                 <div className="mt-2.5 flex items-baseline justify-between gap-2">
                   <h3 className="text-[15px] font-bold text-[#07111E] leading-snug group-hover:text-[#A07020] transition-colors">
                     {unit.title}
                   </h3>
-                  <span className="font-arabic text-sm font-bold text-[#A07020] shrink-0">
-                    {unit.arabicTitle}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="font-arabic text-sm font-bold text-[#A07020]">
+                      {unit.arabicTitle}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speakArabic(unit.arabicTitle);
+                      }}
+                      title={`Listen to ${unit.title}`}
+                      className="opacity-60 hover:opacity-100 p-0.5 rounded hover:bg-[#FDF8EC] text-[#DFB76C] transition-all cursor-pointer"
+                    >
+                      <Volume2 className="w-3 h-3 text-[#C59B4B]" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Metrics: Speaking Score + Vocab Progress Bar */}
@@ -239,6 +324,7 @@ export function CurriculumSection({
           })}
         </motion.div>
       </AnimatePresence>
+      )}
     </section>
   );
 }

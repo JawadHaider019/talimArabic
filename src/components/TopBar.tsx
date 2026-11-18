@@ -19,6 +19,8 @@ interface TopBarProps {
   onOpenUpgrade: () => void;
   onOpenPlacement: () => void;
   onResetDemo: () => void;
+  onToggleDemoMode?: (mode: 'bubble' | 'advanced') => void;
+  currentDemoMode?: 'bubble' | 'advanced';
   onLogout: () => void;
 }
 
@@ -29,6 +31,8 @@ export function TopBar({
   onOpenUpgrade,
   onOpenPlacement,
   onResetDemo,
+  onToggleDemoMode,
+  currentDemoMode = 'bubble',
   onLogout,
 }: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -77,6 +81,19 @@ export function TopBar({
 
         {/* Right Conversion Actions & Account */}
         <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Live Vapi AI Voice Badge */}
+          {!isMobileView && (
+            <div className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B192C]/[0.03] border border-[#E2E8F0] text-xs font-semibold text-[#5A6B82]">
+              <span className="flex items-center gap-0.5">
+                <span className="w-1 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="w-1 h-3.5 rounded-full bg-[#10B981] animate-pulse delay-75" />
+                <span className="w-1 h-2 rounded-full bg-[#10B981] animate-pulse delay-150" />
+              </span>
+              <span className="text-[11px] font-bold text-[#0B192C]">Vapi Voice AI</span>
+              <span className="text-[10px] text-[#059669] bg-[#ECFDF5] px-1.5 py-0.5 rounded-full font-bold border border-[#A7F3D0]/60">Connected</span>
+            </div>
+          )}
+
           {/* Free Placement CTA */}
           {!isMobileView && (
             <motion.button
@@ -205,8 +222,33 @@ export function TopBar({
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-[#1E293B] hover:bg-[#F6F8FB] transition-colors text-left cursor-pointer font-medium"
                     >
                       <RotateCcw className="w-4 h-4 text-[#5A6B82]" />
-                      <span>Reset dashboard state</span>
+                      <span>Reset to client's Bubble state</span>
                     </button>
+                    {onToggleDemoMode && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onToggleDemoMode(
+                            currentDemoMode === 'bubble' ? 'advanced' : 'bubble'
+                          );
+                        }}
+                        className="w-full flex items-center justify-between px-4 py-2 text-xs text-[#1E293B] hover:bg-[#FDF8EC] transition-colors text-left cursor-pointer font-medium"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <RotateCcw className="w-4 h-4 text-[#A07020]" />
+                          <span>
+                            {currentDemoMode === 'bubble'
+                              ? 'Preview: Active Learner State'
+                              : 'Preview: Client Bubble State'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF8EC] text-[#A07020] border border-[#DFB76C]/40">
+                          Toggle
+                        </span>
+                      </button>
+                    )}
                     <div className="flex items-center gap-2.5 px-4 py-2 text-xs text-[#64748B]">
                       <User className="w-3.5 h-3.5 text-[#94A3B8]" />
                       <span>{STUDENT_PROFILE.planName}</span>

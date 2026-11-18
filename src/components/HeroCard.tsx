@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IslamicGeometricPattern } from './GeometricPattern';
-import { CurriculumUnit, formatSecondsToClock } from '../data/curriculum';
+import { CurriculumUnit, formatSecondsToClock, TUTOR_PERSONAS, TutorPersona } from '../data/curriculum';
 
 export type HeroMode = 'default' | 'live' | 'updating';
 
@@ -57,6 +57,10 @@ export function HeroCard({
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const [lastUserReply, setLastUserReply] = useState<string | null>(null);
   const [isSpeakingTurn, setIsSpeakingTurn] = useState(false);
+  const [selectedTutorId, setSelectedTutorId] = useState<string>('aisha');
+  const [speechSpeed, setSpeechSpeed] = useState<number>(1.0);
+  const currentTutor =
+    TUTOR_PERSONAS.find((t) => t.id === selectedTutorId) ?? TUTOR_PERSONAS[0];
 
   useEffect(() => {
     if (mode !== 'live') {
@@ -72,7 +76,7 @@ export function HeroCard({
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ar-SA';
-      utterance.rate = 0.92;
+      utterance.rate = speechSpeed;
       window.speechSynthesis.speak(utterance);
     } catch {
       // Ignore if speech synthesis is unavailable
@@ -185,9 +189,7 @@ export function HeroCard({
                   Book {unit.book} · Unit {unit.unitNumber}
                 </p>
                 <div
-                  className={`mt-2 flex items-baseline gap-4 ${
-                    isMobileView ? 'flex-wrap' : ''
-                  }`}
+                  className={`mt-2 flex items-center gap-3.5 flex-wrap`}
                 >
                   <h2
                     className={`font-extrabold tracking-tight text-white leading-tight ${
@@ -203,6 +205,16 @@ export function HeroCard({
                   >
                     {unit.arabicTitle}
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={() => speakArabic(unit.arabicTitle)}
+                    title="Listen to authentic pronunciation"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.08] hover:bg-[#DFB76C]/20 border border-[#DFB76C]/40 text-xs font-semibold text-[#F5DEB3] hover:text-white transition-all cursor-pointer shadow-xs active:scale-95"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-[#DFB76C] shrink-0" />
+                    <span>Listen · اسْتَمِعْ</span>
+                  </button>
                 </div>
               </div>
 
@@ -259,32 +271,116 @@ export function HeroCard({
               </div>
             </div>
 
-            {/* Right Column on Desktop: Tutor Conversation Prompt Preview */}
+            {/* Right Column: Interactive 3D Voice Orb & Persona Hub */}
             {!isMobileView && (
               <div className="col-span-5">
                 <motion.div
                   whileHover={{ y: -2 }}
                   transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  className="rounded-2xl bg-white/[0.05] border border-[#DFB76C]/25 p-6 backdrop-blur-md shadow-xl relative overflow-hidden"
+                  className="rounded-2xl bg-white/[0.05] border border-[#DFB76C]/30 p-5 backdrop-blur-md shadow-xl relative overflow-hidden"
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(circle,rgba(223,183,108,0.12),transparent_70%)] pointer-events-none" />
-                  <div className="flex items-center justify-between text-xs text-[#CBD5E1]">
-                    <span className="font-semibold text-white/95 uppercase tracking-wider text-[11px]">
-                      Session Focus
-                    </span>
-                    <span className="tabular-nums font-semibold text-[#F3D99B] bg-white/[0.08] px-2.5 py-0.5 rounded-full border border-white/10">
-                      Vocab {unit.vocabCorrect}/{unit.vocabTotal}
-                    </span>
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-[radial-gradient(circle,rgba(223,183,108,0.18),transparent_70%)] pointer-events-none" />
+
+                  {/* Persona Switcher & Live Voice Indicator */}
+                  <div className="flex items-center justify-between text-xs pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center -space-x-1">
+                        {TUTOR_PERSONAS.map((p) => {
+                          const active = p.id === selectedTutorId;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setSelectedTutorId(p.id)}
+                              title={`${p.name} (${p.dialect})`}
+                              className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                                active
+                                  ? 'border-[#DFB76C] scale-110 z-10 shadow-xs'
+                                  : 'border-white/20 opacity-60 hover:opacity-100'
+                              }`}
+                            >
+                              <img
+                                src={p.avatarUrl}
+                                alt={p.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-white text-[11px] leading-tight">
+                          {currentTutor.name}
+                        </p>
+                        <p className="text-[10px] text-[#DFB76C] font-arabic font-semibold">
+                          {currentTutor.arabicName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10 text-[10px] font-semibold text-[#34D399]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
+                      <span>Vapi Voice Active</span>
+                    </div>
                   </div>
-                  <p className="font-arabic text-2xl font-bold text-white mt-3.5 leading-relaxed text-right drop-shadow-sm">
-                    {unit.conversationPromptArabic}
-                  </p>
-                  <p className="text-xs text-[#CBD5E1] mt-2.5 leading-relaxed font-medium">
-                    {unit.conversationPromptEnglish}
-                  </p>
-                  <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between text-xs text-[#94A3B8] font-medium">
-                    <span className="text-[#F3D99B]">Voice tutor ready</span>
-                    <span>~10 min guided dialogue</span>
+
+                  {/* 3D Pulsing Voice Orb & Animated Sound Rings */}
+                  <div className="py-4 flex flex-col items-center justify-center relative">
+                    <div className="relative w-24 h-24 flex items-center justify-center">
+                      {/* Outer Breathing Halo */}
+                      <motion.div
+                        animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.45, 0.2] }}
+                        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-[#DFB76C]/30 via-[#10B981]/25 to-[#DFB76C]/30 blur-md pointer-events-none"
+                      />
+
+                      {/* Rotating Dashed Audio Ring */}
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+                        className="absolute -inset-1.5 rounded-full border border-dashed border-[#DFB76C]/40 pointer-events-none"
+                      />
+
+                      {/* 3D Holographic Core Sphere */}
+                      <motion.div
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => speakArabic(unit.conversationPromptArabic)}
+                        title="Click to hear AI Tutor prompt"
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E6C27A] via-[#142A4A] to-[#081322] border-2 border-[#F5DEB3]/70 shadow-lg shadow-[#DFB76C]/30 flex items-center justify-center cursor-pointer relative overflow-hidden"
+                      >
+                        <Volume2 className="w-6 h-6 text-[#F5DEB3] drop-shadow-md z-10" />
+                        <div className="absolute inset-0 bg-radial from-white/30 to-transparent pointer-events-none" />
+                      </motion.div>
+                    </div>
+
+                    {/* Speech Speed Controller */}
+                    <div className="mt-2.5 inline-flex items-center gap-1 p-0.5 rounded-lg bg-black/30 border border-white/10 text-[10px] font-bold">
+                      {[0.8, 1.0, 1.2].map((spd) => (
+                        <button
+                          key={spd}
+                          type="button"
+                          onClick={() => setSpeechSpeed(spd)}
+                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                            speechSpeed === spd
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C59B4B] text-[#07111E] shadow-2xs font-extrabold'
+                              : 'text-white/60 hover:text-white'
+                          }`}
+                        >
+                          {spd}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Conversation Starter Prompt */}
+                  <div className="pt-2 border-t border-white/10">
+                    <p className="font-arabic text-xl font-bold text-white leading-relaxed text-right drop-shadow-sm">
+                      {unit.conversationPromptArabic}
+                    </p>
+                    <p className="text-[11px] text-[#CBD5E1] mt-1 text-right font-medium">
+                      {unit.conversationPromptEnglish}
+                    </p>
                   </div>
                 </motion.div>
               </div>
