@@ -3,6 +3,8 @@ import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import {
   INITIAL_UNITS,
   STUDENT_PROFILE,
+  REAL_BUBBLE_PROFILE,
+  REAL_BUBBLE_UNITS,
   SAMPLE_SCORE_HISTORY,
   CurriculumUnit,
   SpeakingSessionPoint,
@@ -16,8 +18,11 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { UnitPickerModal } from './components/UnitPickerModal';
 import { VocabQuizModal } from './components/VocabQuizModal';
 import { LoginScreen } from './components/LoginScreen';
+import { TrustProofStrip } from './components/TrustProofStrip';
+import { UpgradeModal } from './components/UpgradeModal';
+import { PlacementBookingModal } from './components/PlacementBookingModal';
 
-const STORAGE_KEY = 'talimarabic_app_v2';
+const STORAGE_KEY = 'talimarabic_app_v3';
 
 interface PersistedState {
   isLoggedIn: boolean;
@@ -38,18 +43,18 @@ interface PersistedState {
 function loadInitialState(): PersistedState {
   const fallback: PersistedState = {
     isLoggedIn: true,
-    studentEmail: STUDENT_PROFILE.email,
-    units: INITIAL_UNITS,
-    activeUnitId: 'b1-u4',
+    studentEmail: REAL_BUBBLE_PROFILE.email,
+    units: REAL_BUBBLE_UNITS,
+    activeUnitId: 'b1-u3', // Book 1, Unit 3: The Home (matches client's real Bubble state)
     activeBook: 1,
-    quizUnitId: 'b1-u4',
-    weeklyCompleted: STUDENT_PROFILE.weeklyGoalCompleted,
-    consecutiveWeeksStreak: STUDENT_PROFILE.weeklyStreakCount,
+    quizUnitId: 'b1-u3',
+    weeklyCompleted: REAL_BUBBLE_PROFILE.weeklyGoalCompleted, // 0
+    consecutiveWeeksStreak: REAL_BUBBLE_PROFILE.weeklyStreakCount, // 0
     streakAwardedThisWeek: false,
-    timeStudiedMinutes: STUDENT_PROFILE.timeStudiedMinutes,
-    remainingSeconds: STUDENT_PROFILE.sessionRemainingSeconds,
-    scoreHistory: SAMPLE_SCORE_HISTORY,
-    latestUnitId: 'b1-u4',
+    timeStudiedMinutes: REAL_BUBBLE_PROFILE.timeStudiedMinutes, // 10 min
+    remainingSeconds: REAL_BUBBLE_PROFILE.sessionRemainingSeconds, // 560 = 9:20
+    scoreHistory: [], // Friendly empty chart state as requested
+    latestUnitId: 'b1-u3', // Needs review 15%
   };
 
   if (typeof window === 'undefined') return fallback;
@@ -113,6 +118,10 @@ export default function App() {
   const [onboardingOpen, setOnboardingOpen] = useState<boolean>(false);
   const [unitPickerOpen, setUnitPickerOpen] = useState<boolean>(false);
   const [vocabQuizOpen, setVocabQuizOpen] = useState<boolean>(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState<boolean>(false);
+  const [upgradeTargetTitle, setUpgradeTargetTitle] = useState<string | undefined>(undefined);
+  const [placementModalOpen, setPlacementModalOpen] = useState<boolean>(false);
+  const [isEnrolledInFull, setIsEnrolledInFull] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [windowWidth, setWindowWidth] = useState<number>(() =>
@@ -282,23 +291,23 @@ export default function App() {
 
   const handleResetDemo = () => {
     window.localStorage.removeItem(STORAGE_KEY);
-    setUnits(INITIAL_UNITS);
-    setActiveUnitId('b1-u4');
+    setUnits(REAL_BUBBLE_UNITS);
+    setActiveUnitId('b1-u3');
     setActiveBook(1);
-    setQuizUnitId('b1-u4');
-    setLatestUnitId('b1-u4');
-    setStudentEmail(STUDENT_PROFILE.email);
-    setWeeklyCompleted(STUDENT_PROFILE.weeklyGoalCompleted);
-    setConsecutiveWeeksStreak(STUDENT_PROFILE.weeklyStreakCount);
+    setQuizUnitId('b1-u3');
+    setLatestUnitId('b1-u3');
+    setStudentEmail(REAL_BUBBLE_PROFILE.email);
+    setWeeklyCompleted(REAL_BUBBLE_PROFILE.weeklyGoalCompleted);
+    setConsecutiveWeeksStreak(REAL_BUBBLE_PROFILE.weeklyStreakCount);
     setStreakAwardedThisWeek(false);
-    setTimeStudiedMinutes(STUDENT_PROFILE.timeStudiedMinutes);
-    setRemainingSeconds(STUDENT_PROFILE.sessionRemainingSeconds);
+    setTimeStudiedMinutes(REAL_BUBBLE_PROFILE.timeStudiedMinutes);
+    setRemainingSeconds(REAL_BUBBLE_PROFILE.sessionRemainingSeconds);
     setHeroMode('default');
     setIsMuted(false);
     setOnboardingOpen(false);
     setUnitPickerOpen(false);
     setVocabQuizOpen(false);
-    setScoreHistory(SAMPLE_SCORE_HISTORY);
+    setScoreHistory([]);
     showToast('Dashboard reset to starting state.');
   };
 
@@ -348,6 +357,11 @@ export default function App() {
           isMobileView={isMobileView}
           studentEmail={studentEmail}
           onOpenOnboarding={() => setOnboardingOpen(true)}
+          onOpenUpgrade={() => {
+            setUpgradeTargetTitle(undefined);
+            setUpgradeModalOpen(true);
+          }}
+          onOpenPlacement={() => setPlacementModalOpen(true)}
           onResetDemo={handleResetDemo}
           onLogout={() => {
             setHeroMode('default');
@@ -368,35 +382,45 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-          <div
-            className={`flex ${
-              isMobileView
-                ? 'flex-col gap-2'
-                : 'items-end justify-between gap-4'
-            }`}
-          >
-            <div>
-              <div className="inline-flex items-center gap-2 mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#B38634]" />
-                <p className="font-arabic text-base font-semibold text-[#A07020] text-left">
-                  السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ، يُوسُف
-                </p>
+            <div
+              className={`flex ${
+                isMobileView
+                  ? 'flex-col gap-2'
+                  : 'items-end justify-between gap-4'
+              }`}
+            >
+              <div>
+                <div className="inline-flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#B38634]" />
+                  <p className="font-arabic text-base font-semibold text-[#A07020] text-left">
+                    السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ، يُوسُف
+                  </p>
+                </div>
+                <h1
+                  className={`font-bold tracking-tight text-[#07111E] ${
+                    isMobileView ? 'text-2xl' : 'text-[32px]'
+                  }`}
+                >
+                  Assalamu Alaikum 👋, {STUDENT_PROFILE.firstName}
+                </h1>
               </div>
-              <h1
-                className={`font-bold tracking-tight text-[#07111E] ${
-                  isMobileView ? 'text-2xl' : 'text-[32px]'
-                }`}
-              >
-                Assalamu Alaikum 👋, {STUDENT_PROFILE.firstName}
-              </h1>
-            </div>
 
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#E8ECF2] shadow-xs text-xs font-semibold text-[#5A6B82] tabular-nums self-start sm:self-auto">
-              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-              <span>Wednesday, 18 Nov 2026</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#E8ECF2] shadow-xs text-xs font-semibold text-[#5A6B82] tabular-nums self-start sm:self-auto">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span>Wednesday, 18 Nov 2026</span>
+              </div>
             </div>
-          </div>
           </motion.section>
+
+          {/* 2.5 Social Proof & High-Converting Trust Strip */}
+          <TrustProofStrip
+            isMobileView={isMobileView}
+            onOpenPlacement={() => setPlacementModalOpen(true)}
+            onOpenUpgrade={() => {
+              setUpgradeTargetTitle(undefined);
+              setUpgradeModalOpen(true);
+            }}
+          />
 
           {/* 3. Hero Card ("Continue your lesson" + Live Session + Updating Results) */}
           <motion.div
@@ -478,89 +502,117 @@ export default function App() {
               activeUnitId={activeUnitId}
               onChangeBook={setActiveBook}
               onSelectUnit={handleSelectUnitFromCurriculum}
+              onOpenUpgradeForUnit={(u) => {
+                setUpgradeTargetTitle(`Book ${u.book}, Unit ${u.unitNumber}: ${u.title}`);
+                setUpgradeModalOpen(true);
+              }}
+              isEnrolledInFull={isEnrolledInFull}
             />
           </motion.div>
         </main>
 
-      {/* First-Time Student Onboarding Modal */}
-      <OnboardingModal
-        isOpen={onboardingOpen}
-        isMobileView={isMobileView}
-        units={units}
-        currentUnitId={activeUnitId}
-        onConfirm={(unitId) => {
-          const chosen = units.find((u) => u.id === unitId);
-          if (chosen) {
-            setActiveUnitId(chosen.id);
-            setQuizUnitId(chosen.id);
-            setActiveBook(chosen.book);
-            showToast(
-              `Starting unit set to Book ${chosen.book}, Unit ${chosen.unitNumber}: ${chosen.title}`
-            );
-          }
-          setOnboardingOpen(false);
-        }}
-        onClose={() => setOnboardingOpen(false)}
-      />
+        {/* Course Upgrade & Unlock Modal */}
+        <UpgradeModal
+          isOpen={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          targetUnitTitle={upgradeTargetTitle}
+          isMobileView={isMobileView}
+          onSelectPlan={(plan) => {
+            setIsEnrolledInFull(true);
+            showToast(`Enrolled in ${plan}! All 32 curriculum units unlocked.`);
+          }}
+        />
 
-      {/* Unit Picker Modal ("Choose a different unit") */}
-      <UnitPickerModal
-        isOpen={unitPickerOpen}
-        isMobileView={isMobileView}
-        units={units}
-        activeUnitId={activeUnitId}
-        onSelect={(u) => {
-          setActiveUnitId(u.id);
-          setQuizUnitId(u.id);
-          setActiveBook(u.book);
-          showToast(`Lesson switched to Book ${u.book}, Unit ${u.unitNumber}: ${u.title}`);
-        }}
-        onClose={() => setUnitPickerOpen(false)}
-      />
+        {/* 1-on-1 Oral Placement Booking Modal */}
+        <PlacementBookingModal
+          isOpen={placementModalOpen}
+          onClose={() => setPlacementModalOpen(false)}
+          isMobileView={isMobileView}
+          studentEmail={studentEmail}
+          onBookConfirmed={({ slot }) => {
+            showToast(`Assessment confirmed for ${slot}. Check your email!`);
+          }}
+        />
 
-      {/* Interactive Vocabulary Quiz Modal */}
-      <VocabQuizModal
-        isOpen={vocabQuizOpen}
-        isMobileView={isMobileView}
-        unit={quizUnit}
-        onComplete={(uId, correctCount) => {
-          if (correctCount > 0) {
-            setUnits((prev) =>
-              prev.map((u) =>
-                u.id === uId
-                  ? {
-                      ...u,
-                      vocabCorrect: Math.min(
-                        u.vocabTotal,
-                        u.vocabCorrect + correctCount
-                      ),
-                    }
-                  : u
-              )
-            );
-          }
-          showToast(`Vocabulary quiz saved (+${correctCount} words mastered).`);
-        }}
-        onClose={() => setVocabQuizOpen(false)}
-      />
+        {/* First-Time Student Onboarding Modal */}
+        <OnboardingModal
+          isOpen={onboardingOpen}
+          isMobileView={isMobileView}
+          units={units}
+          currentUnitId={activeUnitId}
+          onConfirm={(unitId) => {
+            const chosen = units.find((u) => u.id === unitId);
+            if (chosen) {
+              setActiveUnitId(chosen.id);
+              setQuizUnitId(chosen.id);
+              setActiveBook(chosen.book);
+              showToast(
+                `Starting unit set to Book ${chosen.book}, Unit ${chosen.unitNumber}: ${chosen.title}`
+              );
+            }
+            setOnboardingOpen(false);
+          }}
+          onClose={() => setOnboardingOpen(false)}
+        />
 
-      {/* Subtle Non-Intrusive Toast Feedback */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            key={toastMessage}
-            role="status"
-            aria-live="polite"
-            initial={{ opacity: 0, y: -10, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.97 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-5 right-5 left-5 sm:left-auto sm:top-20 sm:bottom-auto z-50 bg-[#0B192C] text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg border border-white/15"
-          >
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Unit Picker Modal ("Choose a different unit") */}
+        <UnitPickerModal
+          isOpen={unitPickerOpen}
+          isMobileView={isMobileView}
+          units={units}
+          activeUnitId={activeUnitId}
+          onSelect={(u) => {
+            setActiveUnitId(u.id);
+            setQuizUnitId(u.id);
+            setActiveBook(u.book);
+            showToast(`Lesson switched to Book ${u.book}, Unit ${u.unitNumber}: ${u.title}`);
+          }}
+          onClose={() => setUnitPickerOpen(false)}
+        />
+
+        {/* Interactive Vocabulary Quiz Modal */}
+        <VocabQuizModal
+          isOpen={vocabQuizOpen}
+          isMobileView={isMobileView}
+          unit={quizUnit}
+          onComplete={(uId, correctCount) => {
+            if (correctCount > 0) {
+              setUnits((prev) =>
+                prev.map((u) =>
+                  u.id === uId
+                    ? {
+                        ...u,
+                        vocabCorrect: Math.min(
+                          u.vocabTotal,
+                          u.vocabCorrect + correctCount
+                        ),
+                      }
+                    : u
+                )
+              );
+            }
+            showToast(`Vocabulary quiz saved (+${correctCount} words mastered).`);
+          }}
+          onClose={() => setVocabQuizOpen(false)}
+        />
+
+        {/* Subtle Non-Intrusive Toast Feedback */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              key={toastMessage}
+              role="status"
+              aria-live="polite"
+              initial={{ opacity: 0, y: -10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.97 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed bottom-5 right-5 left-5 sm:left-auto sm:top-20 sm:bottom-auto z-50 bg-[#0B192C] text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg border border-white/15"
+            >
+              {toastMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </MotionConfig>
   );

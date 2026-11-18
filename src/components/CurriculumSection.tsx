@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, CircleDashed, ChevronRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, CircleDashed, ChevronRight, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CurriculumUnit } from '../data/curriculum';
 
@@ -10,6 +10,8 @@ interface CurriculumSectionProps {
   activeUnitId: string;
   onChangeBook: (book: 1 | 2) => void;
   onSelectUnit: (unit: CurriculumUnit) => void;
+  onOpenUpgradeForUnit: (unit: CurriculumUnit) => void;
+  isEnrolledInFull?: boolean;
 }
 
 export function CurriculumSection({
@@ -19,6 +21,8 @@ export function CurriculumSection({
   activeUnitId,
   onChangeBook,
   onSelectUnit,
+  onOpenUpgradeForUnit,
+  isEnrolledInFull = false,
 }: CurriculumSectionProps) {
   const bookUnits = units.filter((u) => u.book === activeBook);
   const book1Passed = units.filter((u) => u.book === 1 && u.status === 'passed').length;
@@ -109,6 +113,9 @@ export function CurriculumSection({
         >
           {bookUnits.map((unit, idx) => {
             const isSelected = unit.id === activeUnitId;
+            const isLocked = !isEnrolledInFull && (unit.book === 2 || unit.unitNumber > 3);
+            const isFreePreview = unit.book === 1 && unit.unitNumber <= 3;
+
             const vocabPercent = Math.round(
               (unit.vocabCorrect / Math.max(1, unit.vocabTotal)) * 100
             );
@@ -154,25 +161,41 @@ export function CurriculumSection({
                 }}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.988 }}
-                onClick={() => onSelectUnit(unit)}
-                className={`group text-left rounded-2xl border p-4 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFB76C] ${
+                onClick={() => (isLocked ? onOpenUpgradeForUnit(unit) : onSelectUnit(unit))}
+                className={`group text-left rounded-2xl border p-4 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFB76C] relative ${
                   isSelected
                     ? 'bg-gradient-to-b from-[#FFFDF9] to-[#FAF6EE] border-[#DFB76C] ring-2 ring-[#DFB76C]/30 shadow-lg shadow-[#DFB76C]/10'
+                    : isLocked
+                    ? 'bg-[#FAFBFD] border-[#E8ECF2] hover:border-[#DFB76C]/50 hover:shadow-md'
                     : 'bg-white border-[#E8ECF2] hover:border-[#DFB76C]/50 hover:shadow-md hover:shadow-[#0B192C]/5'
                 }`}
               >
                 {/* Top Row: Unit # + Status Chip */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-[#64748B] tabular-nums">
-                    Unit {unit.unitNumber}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-[#64748B] tabular-nums">
+                      Unit {unit.unitNumber}
+                    </span>
+                    {isFreePreview && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]">
+                        Free
+                      </span>
+                    )}
+                  </div>
 
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold whitespace-nowrap ${statusMeta.chipClass}`}
-                  >
-                    {statusMeta.icon}
-                    <span>{statusMeta.label}</span>
-                  </span>
+                  {isLocked ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold whitespace-nowrap bg-[#FDF8EC] text-[#92400E] border-[#DFB76C]/40 shadow-2xs">
+                      <Lock className="w-3 h-3 text-[#A07020]" />
+                      <span>Unlock</span>
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold whitespace-nowrap ${statusMeta.chipClass}`}
+                    >
+                      {statusMeta.icon}
+                      <span>{statusMeta.label}</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Unit Title (English + Arabic) */}

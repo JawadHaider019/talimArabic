@@ -42,6 +42,20 @@ export interface SpeakingSessionPoint {
   score: number;
 }
 
+export const REAL_BUBBLE_PROFILE = {
+  firstName: 'Yusuf',
+  fullName: 'Yusuf Mansoor',
+  email: 'm@m.com',
+  avatarUrl: '/src/assets/images/avatar_student_yusuf_1794996163146.jpg',
+  planName: 'Weekly Speaking Plan',
+  weeklyGoalTarget: 5,
+  weeklyGoalCompleted: 0,
+  weeklyStreakCount: 0,
+  weeklyResetLabel: 'Resets Mon 23 Nov',
+  timeStudiedMinutes: 10,
+  sessionRemainingSeconds: 560, // 9 min 20 sec remaining for current session
+};
+
 export const STUDENT_PROFILE = {
   firstName: 'Yusuf',
   fullName: 'Yusuf Mansoor',
@@ -872,3 +886,19 @@ export function formatSecondsToClock(totalSeconds: number): string {
   const secs = Math.max(0, totalSeconds) % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+export const REAL_BUBBLE_UNITS: CurriculumUnit[] = INITIAL_UNITS.map((u) => {
+  if (u.id === 'b1-u1') {
+    return { ...u, status: 'passed', speakingScore: 42, vocabCorrect: 0, lastPracticed: '15 Nov' };
+  }
+  if (u.id === 'b1-u2') {
+    return { ...u, status: 'not_started', speakingScore: null, vocabCorrect: 18 };
+  }
+  if (u.id === 'b1-u3') {
+    return { ...u, status: 'needs_review', speakingScore: 15, vocabCorrect: 0, lastPracticed: '17 Nov' };
+  }
+  if (u.id === 'b1-u5') {
+    return { ...u, status: 'not_started', speakingScore: null, vocabCorrect: 7 };
+  }
+  return { ...u, status: 'not_started', speakingScore: null, vocabCorrect: 0 };
+});
